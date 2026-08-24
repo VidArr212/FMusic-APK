@@ -37,54 +37,55 @@ jobs:
         id: version
         run: |
           VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          echo "VERSION_NAME=$VERSION" >> $GITHUB_ENV
-          echo "TAG_NAME=v$VERSION" >> $GITHUB_ENV
-          echo "APK_NAME=FMusic-v$VERSION.apk" >> $GITHUB_ENV
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "apk_name=FMusic-v$VERSION.apk" >> "$GITHUB_OUTPUT"
           echo "Detected version: $VERSION"
 
-      - name: Generate Wrapper & Build Debug APK
+      - name: Generate Wrapper & Build Release APK
         run: |
           gradle wrapper --gradle-version 8.6
           chmod +x ./gradlew
           ./gradlew assembleRelease --stacktrace
 
-      - name: Prepare Direct APK File
+      - name: Prepare Signed APK File
         run: |
           mkdir -p release_output
-          APK_SRC="app/build/outputs/apk/release/app-release-unsigned.apk"
+          APK_SRC="app/build/outputs/apk/release/app-release.apk"
           if [ ! -f "$APK_SRC" ]; then
-            APK_SRC="app/build/outputs/apk/release/app-release.apk"
+            APK_SRC=$(find app/build/outputs/apk/release/ -name "*.apk" ! -name "*unsigned*" | head -1)
           fi
           if [ ! -f "$APK_SRC" ]; then
-            APK_SRC=$(find app/build/outputs/apk/release/ -name "*.apk" | head -1)
+            APK_SRC=$(find app/build/outputs/apk/ -name "*.apk" | head -1)
           fi
           echo "Using APK: $APK_SRC"
-          cp "$APK_SRC" "release_output/${{ env.APK_NAME }}"
-          cp "$APK_SRC" "${{ env.APK_NAME }}"
+          cp "$APK_SRC" "release_output/${{ steps.version.outputs.apk_name }}"
+          cp "$APK_SRC" "${{ steps.version.outputs.apk_name }}"
 
       - name: Publish Direct .apk to GitHub Releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete ${{ env.TAG_NAME }} --yes || true
-          git tag -f ${{ env.TAG_NAME }}
-          git push origin ${{ env.TAG_NAME }} --force || true
-          gh release create ${{ env.TAG_NAME }} "release_output/${{ env.APK_NAME }}" \
-            --title "🎵 FMusic Release ${{ env.TAG_NAME }}" \
-            --notes "### 🎵 FMusic Android App - Version ${{ env.VERSION_NAME }}
+          gh release delete "${{ steps.version.outputs.tag }}" --yes || true
+          git tag -f "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}" --force || true
+          gh release create "${{ steps.version.outputs.tag }}" "release_output/${{ steps.version.outputs.apk_name }}" \
+            --title "🎵 FMusic Release ${{ steps.version.outputs.tag }}" \
+            --notes "### 🎵 FMusic Android App - Version ${{ steps.version.outputs.version }}
 
-          **Changelog v${{ env.VERSION_NAME }}:**
-          - 🔧 **Fix Force Close**: JSON parsing sekarang aman dari stack overflow
+          **Changelog v${{ steps.version.outputs.version }}:**
+          - 🔧 **Fix Force Close**: JSON parsing aman dari recursive stack overflow
           - 🎵 **Fix Audio Playback**: Multi-provider stream (6 Piped + 4 Invidious) dengan auto-retry
-          - 🎨 **Fix Genre/Moods Grid**: Tampilan kategori di Search sekarang muncul dengan benar
-          - 🎨 **Fix Mood Colors**: Warna kategori mood sekarang ditampilkan dengan tepat
+          - 🎨 **Fix Genre/Moods Grid**: Kategori di Search sekarang tampil rapi 2 kolom
+          - 🎨 **Fix Mood Colors**: Warna kategori mood akurat
+          - 🔑 **Signed APK**: APK sudah di-sign dan siap di-install di semua perangkat Android
           - ⚡ **In-App Auto Updater**: Update otomatis langsung dari aplikasi
 
-          Klik file **${{ env.APK_NAME }}** di bawah untuk langsung download APK!"
+          Klik file **${{ steps.version.outputs.apk_name }}** di bawah untuk download langsung!"
 
       - name: Upload Artifact (Fallback)
         uses: actions/upload-artifact@v4
         with:
-          name: FMusic-${{ env.VERSION_NAME }}-APK
-          path: ${{ env.APK_NAME }}
+          name: FMusic-${{ steps.version.outputs.version }}-APK
+          path: ${{ steps.version.outputs.apk_name }}
           if-no-files-found: error
