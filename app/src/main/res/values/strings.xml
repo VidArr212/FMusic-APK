@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">FMusic</string>
+    <string name="app_version">1.0.01</string>
+    <string name="app_slogan">Feel the Rhythm, Everywhere</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_charts">Charts</string>
+    <string name="nav_library">Your Library</string>
+
+    <!-- Player -->
+    <string name="player_unknown_title">Unknown Title</string>
+    <string name="player_unknown_artist">Unknown Artist</string>
+    <string name="sleep_timer">Sleep Timer</string>
+    <string name="lyrics">Lyrics</string>
+    <string name="about_artist">About Artist</string>
+    <string name="download_song">Save Offline</string>
+    <string name="downloading">Downloading…</string>
+    <string name="downloaded">Saved Offline</string>
+    <string name="share_song">Share Song</string>
+</resources>
