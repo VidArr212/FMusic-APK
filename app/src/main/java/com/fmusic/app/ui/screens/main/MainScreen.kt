@@ -30,6 +30,9 @@ import com.fmusic.app.ui.screens.library.LibraryScreen
 import com.fmusic.app.ui.screens.lyrics.LyricsScreen
 import com.fmusic.app.ui.screens.search.SearchScreen
 import com.fmusic.app.ui.theme.DarkBackground
+import com.fmusic.app.updater.AppUpdateManager
+import com.fmusic.app.updater.UpdateInfo
+import com.fmusic.app.updater.UpdateProgress
 import kotlinx.coroutines.launch
 
 @Composable
@@ -55,11 +58,27 @@ fun MainScreen(
     var isCreatePlaylistVisible by remember { mutableStateOf(false) }
     var selectedTrackForPlaylist by remember { mutableStateOf<TrackItem?>(null) }
 
+    // Auto-update state
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    var updateProgress by remember { mutableStateOf<UpdateProgress>(UpdateProgress.Idle) }
+    var isUpdateDialogVisible by remember { mutableStateOf(false) }
+
     // Favorites & Offline status
     val currentVideoId = playerState.currentTrack?.videoId ?: ""
     val isFavorite by repository.isFavorite(currentVideoId).collectAsState(initial = false)
     val isDownloaded by repository.isDownloaded(currentVideoId).collectAsState(initial = false)
     val allPlaylists by repository.getAllPlaylists().collectAsState(initial = emptyList())
+
+    // Auto-check for updates from GitHub in background
+    LaunchedEffect(Unit) {
+        scope.launch {
+            val info = AppUpdateManager.checkForUpdates()
+            if (info.hasUpdate && !info.apkDownloadUrl.isNullOrBlank()) {
+                updateInfo = info
+                isUpdateDialogVisible = true
+            }
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -167,6 +186,25 @@ fun MainScreen(
                 )
             }
         }
+    }
+
+    // In-App Auto Update Dialog (Patcher)
+    if (isUpdateDialogVisible && updateInfo != null) {
+        UpdateDialog(
+            updateInfo = updateInfo!!,
+            progress = updateProgress,
+            onStartUpdate = {
+                val apkUrl = updateInfo?.apkDownloadUrl
+                if (!apkUrl.isNullOrBlank()) {
+                    scope.launch {
+                        AppUpdateManager.downloadAndInstallApk(context, apkUrl) { prog ->
+                            updateProgress = prog
+                        }
+                    }
+                }
+            },
+            onDismiss = { isUpdateDialogVisible = false }
+        )
     }
 
     // Full Player Modal

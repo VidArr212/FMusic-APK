@@ -2,7 +2,7 @@ package com.fmusic.app.data.repository
 
 import android.content.Context
 import com.fmusic.app.data.api.ApiClient
-import com.fmusic.app.data.api.FMusicApiService
+import com.fmusic.app.data.innertube.InnerTubeClient
 import com.fmusic.app.data.local.FMusicDatabase
 import com.fmusic.app.data.local.entity.*
 import com.fmusic.app.data.model.*
@@ -12,9 +12,6 @@ import kotlinx.coroutines.withContext
 
 class MusicRepository(private val context: Context) {
 
-    private val api: FMusicApiService
-        get() = ApiClient.getService(context)
-
     private val db = FMusicDatabase.getDatabase(context)
     private val searchHistoryDao = db.searchHistoryDao()
     private val recentlyPlayedDao = db.recentlyPlayedDao()
@@ -22,14 +19,20 @@ class MusicRepository(private val context: Context) {
     private val playlistDao = db.playlistDao()
     private val offlineTrackDao = db.offlineTrackDao()
 
-    // API calls
+    // 100% Embedded Direct InnerTube Engine (No external server needed)
     suspend fun getHome(): Result<HomeResponse> = withContext(Dispatchers.IO) {
         try {
-            val response = api.getHome()
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+            val response = InnerTubeClient.getHome()
+            if (response.sections != null && response.sections.isNotEmpty()) {
+                Result.success(response)
             } else {
-                Result.failure(Exception("Failed to fetch home: ${response.message()}"))
+                // Fallback to proxy API if configured
+                val apiRes = ApiClient.getService(context).getHome()
+                if (apiRes.isSuccessful && apiRes.body() != null) {
+                    Result.success(apiRes.body()!!)
+                } else {
+                    Result.success(response)
+                }
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -38,12 +41,8 @@ class MusicRepository(private val context: Context) {
 
     suspend fun getCharts(): Result<ChartResponse> = withContext(Dispatchers.IO) {
         try {
-            val response = api.getCharts()
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
-            } else {
-                Result.failure(Exception("Failed to fetch charts: ${response.message()}"))
-            }
+            val response = InnerTubeClient.getCharts()
+            Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -51,12 +50,8 @@ class MusicRepository(private val context: Context) {
 
     suspend fun getMoods(): Result<MoodResponse> = withContext(Dispatchers.IO) {
         try {
-            val response = api.getMoods()
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
-            } else {
-                Result.failure(Exception("Failed to fetch moods: ${response.message()}"))
-            }
+            val response = InnerTubeClient.getMoods()
+            Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -64,49 +59,22 @@ class MusicRepository(private val context: Context) {
 
     suspend fun search(query: String, filter: String? = null): Result<SearchResponse> = withContext(Dispatchers.IO) {
         try {
-            val response = api.search(query, filter)
-            if (response.isSuccessful && response.body() != null) {
-                // Save to search history
-                searchHistoryDao.insertSearch(SearchHistoryEntity(query.trim()))
-                Result.success(response.body()!!)
-            } else {
-                Result.failure(Exception("Failed search: ${response.message()}"))
-            }
+            val response = InnerTubeClient.search(query, filter)
+            searchHistoryDao.insertSearch(SearchHistoryEntity(query.trim()))
+            Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
     suspend fun getSuggestions(query: String): List<String> = withContext(Dispatchers.IO) {
-        try {
-            val response = api.getSuggestions(query)
-            response.body()?.suggestions ?: emptyList()
-        } catch (e: Exception) {
-            emptyList()
-        }
+        InnerTubeClient.getSuggestions(query)
     }
 
     suspend fun browse(id: String, params: String? = null): Result<BrowseResponse> = withContext(Dispatchers.IO) {
         try {
-            val response = api.browse(id, params)
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
-            } else {
-                Result.failure(Exception("Browse failed: ${response.message()}"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun getNext(videoId: String?, playlistId: String? = null, params: String? = null): Result<QueueResponse> = withContext(Dispatchers.IO) {
-        try {
-            val response = api.getNext(videoId, playlistId, params)
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
-            } else {
-                Result.failure(Exception("Queue fetch failed: ${response.message()}"))
-            }
+            val response = InnerTubeClient.browse(id, params)
+            Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -114,23 +82,10 @@ class MusicRepository(private val context: Context) {
 
     suspend fun getLyrics(title: String, artist: String, duration: Long? = null, browseId: String? = null): Result<LyricsResponse> = withContext(Dispatchers.IO) {
         try {
-            val response = api.getLyrics(title, artist, duration, browseId)
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
-            } else {
-                Result.failure(Exception("Lyrics fetch failed: ${response.message()}"))
-            }
+            val response = InnerTubeClient.getLyrics(title, artist, duration)
+            Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)
-        }
-    }
-
-    suspend fun getSponsorBlock(videoId: String): List<SponsorSegment> = withContext(Dispatchers.IO) {
-        try {
-            val response = api.getSponsorBlock(videoId)
-            response.body()?.segments ?: emptyList()
-        } catch (e: Exception) {
-            emptyList()
         }
     }
 
