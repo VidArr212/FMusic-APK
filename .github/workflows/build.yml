@@ -43,26 +43,30 @@ jobs:
         run: |
           mkdir -p release_output
           if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
-            cp app/build/outputs/apk/debug/app-debug.apk release_output/FMusic-v1.0.01.apk
-            cp app/build/outputs/apk/debug/app-debug.apk FMusic-v1.0.01.apk
+            cp app/build/outputs/apk/debug/app-debug.apk release_output/FMusic-v1.0.1.apk
+            cp app/build/outputs/apk/debug/app-debug.apk FMusic-v1.0.1.apk
           fi
 
       - name: Publish Direct .apk to GitHub Releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete v1.0.01 --yes || true
-          git tag -f v1.0.01
-          git push origin v1.0.01 --force || true
-          gh release create v1.0.01 release_output/FMusic-v1.0.01.apk \
-            --title "🎵 FMusic Release v1.0.01" \
-            --notes "### 🎵 FMusic Android App - Version 1.0.01 (Direct APK Download)
+          gh release delete v1.0.1 --yes || true
+          git tag -f v1.0.1
+          git push origin v1.0.1 --force || true
+          gh release create v1.0.1 release_output/FMusic-v1.0.1.apk \
+            --title "🎵 FMusic Release v1.0.1" \
+            --notes "### 🎵 FMusic Android App - Version 1.0.1 (Direct APK Download)
 
-          Klik file **FMusic-v1.0.01.apk** di bawah untuk langsung download file APK tanpa .zip!"
+          - 💉 **Embedded Direct Music API**: Berjalan 100% standalone tanpa server tambahan.
+          - ⚡ **In-App Auto Updater**: Fitur update otomatis langsung di dalam aplikasi.
+          - 🎨 **Midnight Blue & Electric Neon UI**: Desain Spotify Dark Blue & Neon.
+
+          Klik file **FMusic-v1.0.1.apk** di bawah untuk langsung download file APK tanpa .zip!"
 
       - name: Upload Artifact (Fallback)
         uses: actions/upload-artifact@v4
         with:
-          name: FMusic-v1.0.01-APK
-          path: FMusic-v1.0.01.apk
+          name: FMusic-v1.0.1-APK
+          path: FMusic-v1.0.1.apk
           if-no-files-found: error

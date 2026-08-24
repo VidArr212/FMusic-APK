@@ -12,8 +12,8 @@ android {
         applicationId = "com.fmusic.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 10001
-        versionName = "1.0.01"
+        versionCode = 10100
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

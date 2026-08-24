@@ -116,7 +116,7 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Version 1.0.01",
+                text = "Version 1.0.1",
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontSize = 12.sp,
                     letterSpacing = 1.sp

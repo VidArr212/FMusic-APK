@@ -55,7 +55,7 @@ fun UpdateDialog(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         LinearProgressIndicator(
-                            progress = { progress.percent / 100f },
+                            progress = progress.percent / 100f,
                             modifier = Modifier.fillMaxWidth().height(8.dp),
                             color = NeonCyan,
                             trackColor = DarkSurfaceElevated
