@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   build:
@@ -18,6 +19,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -44,35 +47,22 @@ jobs:
             cp app/build/outputs/apk/debug/app-debug.apk FMusic-v1.0.01.apk
           fi
 
-      - name: Upload APK Artifact
+      - name: Publish Direct .apk to GitHub Releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete v1.0.01 --yes || true
+          git tag -f v1.0.01
+          git push origin v1.0.01 --force || true
+          gh release create v1.0.01 release_output/FMusic-v1.0.01.apk \
+            --title "🎵 FMusic Release v1.0.01" \
+            --notes "### 🎵 FMusic Android App - Version 1.0.01 (Direct APK Download)
+
+          Klik file **FMusic-v1.0.01.apk** di bawah untuk langsung download file APK tanpa .zip!"
+
+      - name: Upload Artifact (Fallback)
         uses: actions/upload-artifact@v4
         with:
           name: FMusic-v1.0.01-APK
           path: FMusic-v1.0.01.apk
           if-no-files-found: error
-
-      - name: Create or Update GitHub Release (Direct .apk Download)
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release_output/FMusic-v1.0.01.apk
-          name: "FMusic Release v1.0.01"
-          tag_name: "v1.0.01"
-          body: |
-            ### 🎵 FMusic Android App - Version 1.0.01
-
-            Direct APK Download available below! (File `.apk` langsung bisa di-download & install)
-
-            #### 🚀 Fitur Utama:
-            - **Spotify Dark Blue & Electric Neon UI**: Desain Midnight Blue dengan Neon Cyan/Blue audio progress bar.
-            - **BootScreen / Splash Screen**: Dilengkapi animasi logo dan versi 1.0.01.
-            - **Skeleton Shimmer Loading**: Animasi loading halus.
-            - **Home**: Mix Indo Music, Trending, Quick Picks, Album & Artist discovery.
-            - **Search**: Auto-suggestions, filter kategori (Songs, Videos, Albums, Artists, Playlists), Riwayat pencarian (bisa hapus/clear), Recently Played, dan Browse All kategori berwarna.
-            - **Charts**: Tangga lagu video & top tracks bernomor urut, video musik, genre, dan artis teratas.
-            - **Library**: Tabs Playlists, Favorites, Saved Offline, History, Stats, + New Playlist, Backup & Restore.
-            - **Music Player**: Mini Player & Full Player dengan Cover Art, Explicit badge (E), Neon Seekbar, Sleep Timer (5-30m), Tombol Share, Lirik Karaoke real-time (*synchronized scrolling*), Tentang Artis, dan Unduh Offline (MP3).
-            - **Background Audio**: AndroidX Media3 ExoPlayer foreground service dengan kontrol notifikasi.
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
