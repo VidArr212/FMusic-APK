@@ -70,7 +70,8 @@ data class LyricLine(
 data class LyricsResponse(
     @SerializedName("synced") val synced: String? = null,
     @SerializedName("plain") val plain: String? = null,
-    @SerializedName("source") val source: String? = null
+    @SerializedName("source") val source: String? = null,
+    @SerializedName("error") val error: String? = null
 ) {
     fun parseSyncedLines(): List<LyricLine> {
         if (synced.isNullOrBlank()) return emptyList()
