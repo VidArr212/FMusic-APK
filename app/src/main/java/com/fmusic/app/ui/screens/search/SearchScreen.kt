@@ -347,35 +347,39 @@ fun SearchScreen(
                 }
 
                 // Render 2-column Category Cards in rows
-                val chunked = categories.chunked(2)
-                items(chunked) { pair ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        CategoryCard(
-                            category = pair[0],
-                            onClick = {
-                                if (pair[0].browseId != null) {
-                                    onBrowseClick(pair[0].browseId!!, pair[0].title, "mood")
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (pair.size > 1) {
+                // Use itemsIndexed over pairs instead of items(List<List<>>) to avoid type crash
+                for (i in categories.indices step 2) {
+                    item {
+                        val first = categories[i]
+                        val second = if (i + 1 < categories.size) categories[i + 1] else null
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             CategoryCard(
-                                category = pair[1],
+                                category = first,
                                 onClick = {
-                                    if (pair[1].browseId != null) {
-                                        onBrowseClick(pair[1].browseId!!, pair[1].title, "mood")
+                                    if (!first.browseId.isNullOrBlank()) {
+                                        onBrowseClick(first.browseId!!, first.title, "mood")
                                     }
                                 },
                                 modifier = Modifier.weight(1f)
                             )
-                        } else {
-                            Spacer(modifier = Modifier.weight(1f))
+                            if (second != null) {
+                                CategoryCard(
+                                    category = second,
+                                    onClick = {
+                                        if (!second.browseId.isNullOrBlank()) {
+                                            onBrowseClick(second.browseId!!, second.title, "mood")
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
@@ -383,3 +387,4 @@ fun SearchScreen(
         }
     }
 }
+
