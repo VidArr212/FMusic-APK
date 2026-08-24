@@ -30,7 +30,7 @@ sealed class UpdateProgress {
 
 object AppUpdateManager {
 
-    const val CURRENT_VERSION = "1.0.1"
+    val CURRENT_VERSION: String get() = com.fmusic.app.BuildConfig.VERSION_NAME
     private const val GITHUB_REPO_API = "https://api.github.com/repos/VidArr212/FMusic-APK/releases/latest"
 
     private val httpClient = OkHttpClient.Builder()
