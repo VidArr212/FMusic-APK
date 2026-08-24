@@ -108,7 +108,8 @@ fun CategoryCard(
     val cardColor = try {
         if (!category.color.isNullOrBlank()) {
             val hex = if (category.color.startsWith("#")) category.color else "#${category.color}"
-            Color(android.graphics.Color.parseColor(hex))
+            val parsed = android.graphics.Color.parseColor(hex)
+            Color(parsed.toLong() and 0xFFFFFFFFL)
         } else {
             DarkSurfaceVariant
         }

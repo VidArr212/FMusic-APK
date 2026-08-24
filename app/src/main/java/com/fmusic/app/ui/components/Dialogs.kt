@@ -223,7 +223,7 @@ fun AddToPlaylistDialog(
                     )
                 }
 
-                Divider(color = DarkSurfaceElevated, modifier = Modifier.padding(vertical = 4.dp))
+                HorizontalDivider(color = DarkSurfaceElevated, modifier = Modifier.padding(vertical = 4.dp))
 
                 if (playlists.isEmpty()) {
                     Text(

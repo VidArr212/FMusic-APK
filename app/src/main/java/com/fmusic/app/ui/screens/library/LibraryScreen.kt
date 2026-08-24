@@ -1,5 +1,6 @@
 package com.fmusic.app.ui.screens.library
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,8 +10,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.outlined.CloudDownload
+import androidx.compose.material.icons.outlined.CloudUpload
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -120,7 +128,7 @@ fun LibraryScreen(
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                 modifier = Modifier.weight(1.3f)
             ) {
-                Icon(imageVector = Icons.Outlined.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(imageVector = Icons.Outlined.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(text = "Import from YT Music", style = MaterialTheme.typography.labelMedium)
             }
@@ -162,7 +170,7 @@ fun LibraryScreen(
             }
         }
 
-        Divider(color = DarkSurfaceElevated, modifier = Modifier.padding(vertical = 4.dp))
+        HorizontalDivider(color = DarkSurfaceElevated, modifier = Modifier.padding(vertical = 4.dp))
 
         // Content Area according to selected tab
         when (uiState.selectedTab) {
@@ -308,7 +316,7 @@ fun LibraryScreen(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = Icons.Filled.DownloadDone,
+                                imageVector = Icons.Filled.CheckCircle,
                                 contentDescription = null,
                                 tint = NeonCyan,
                                 modifier = Modifier.size(48.dp)
