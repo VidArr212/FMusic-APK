@@ -110,7 +110,7 @@ fun FullPlayerModal(
 
                 IconButton(onClick = onAddToPlaylist) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.PlaylistAdd,
+                        imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                         contentDescription = "Playlist Options",
                         tint = TextWhite
                     )
