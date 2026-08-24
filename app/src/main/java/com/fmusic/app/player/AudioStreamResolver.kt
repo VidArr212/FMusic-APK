@@ -1,17 +1,15 @@
 package com.fmusic.app.player
 
 import android.content.Context
-import com.fmusic.app.data.local.FMusicDatabase
 import com.fmusic.app.data.model.TrackItem
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
-import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 object AudioStreamResolver {
@@ -27,8 +25,7 @@ object AudioStreamResolver {
         "https://api.piped.private.coffee",
         "https://pipedapi.tokhmi.xyz",
         "https://piped-api.garudalinux.org",
-        "https://pipedapi.drgns.space",
-        "https://eu.piped.yt/api"
+        "https://pipedapi.drgns.space"
     )
 
     // Invidious instances for fallback
@@ -42,20 +39,12 @@ object AudioStreamResolver {
     suspend fun resolveStreamUrl(context: Context, track: TrackItem): String? = withContext(Dispatchers.IO) {
         val videoId = track.videoId ?: return@withContext null
 
-        // 1. Check offline first (no network needed)
-        try {
-            val offlineDao = FMusicDatabase.getDatabase(context).offlineTrackDao()
-            val offlineTrack = offlineDao.getOfflineTrack(videoId)
-            if (offlineTrack != null && File(offlineTrack.localFilePath).exists()) {
-                return@withContext offlineTrack.localFilePath
-            }
-        } catch (ignored: Exception) {}
-
+        // 1. Check local file first (offline mode)
         if (!track.localPath.isNullOrBlank() && File(track.localPath).exists()) {
             return@withContext track.localPath
         }
 
-        // 2. Try Piped instances for best audio stream
+        // 2. Try Piped instances
         for (base in PIPED_INSTANCES) {
             val url = tryPiped(base, videoId)
             if (!url.isNullOrBlank()) return@withContext url
@@ -67,7 +56,7 @@ object AudioStreamResolver {
             if (!url.isNullOrBlank()) return@withContext url
         }
 
-        // 4. Try cobalt.tools API (another option)
+        // 4. Try cobalt.tools as last resort
         val cobaltUrl = tryCobalt(videoId)
         if (!cobaltUrl.isNullOrBlank()) return@withContext cobaltUrl
 
@@ -90,12 +79,11 @@ object AudioStreamResolver {
             if (!json.isJsonObject) return null
             val obj = json.asJsonObject
 
-            // Check for error
-            if (obj.has("message") && !obj.has("audioStreams")) return null
+            // If error/no audioStreams field, skip
+            if (!obj.has("audioStreams")) return null
 
             val audioStreams = obj.getAsJsonArray("audioStreams") ?: return null
 
-            // Pick highest quality audio-only stream (prefer opus/ogg, then m4a)
             var bestUrl: String? = null
             var bestBitrate = 0
             var opusUrl: String? = null
@@ -111,18 +99,13 @@ object AudioStreamResolver {
                 val codec = s.get("codec")?.asString ?: ""
 
                 if (mimeType.contains("opus", ignoreCase = true) || codec.contains("opus", ignoreCase = true)) {
-                    if (bitrate >= opusBitrate) {
-                        opusBitrate = bitrate
-                        opusUrl = url
-                    }
-                } else if (bitrate >= bestBitrate) {
-                    bestBitrate = bitrate
-                    bestUrl = url
+                    if (bitrate >= opusBitrate) { opusBitrate = bitrate; opusUrl = url }
+                } else {
+                    if (bitrate >= bestBitrate) { bestBitrate = bitrate; bestUrl = url }
                 }
             }
 
-            // Prefer m4a/mp4 over opus for ExoPlayer compatibility on some devices
-            return bestUrl ?: opusUrl
+            bestUrl ?: opusUrl
         } catch (e: Exception) {
             null
         }
@@ -142,7 +125,6 @@ object AudioStreamResolver {
             val json = JsonParser.parseString(body)
             if (!json.isJsonObject) return null
             val obj = json.asJsonObject
-
             val formats = obj.getAsJsonArray("adaptiveFormats") ?: return null
 
             var bestUrl: String? = null
@@ -156,10 +138,7 @@ object AudioStreamResolver {
                 val url = fmt.get("url")?.asString ?: continue
                 if (url.isBlank()) continue
                 val bitrate = fmt.get("bitrate")?.asInt ?: 0
-                if (bitrate >= bestBitrate) {
-                    bestBitrate = bitrate
-                    bestUrl = url
-                }
+                if (bitrate >= bestBitrate) { bestBitrate = bitrate; bestUrl = url }
             }
             bestUrl
         } catch (e: Exception) {
@@ -169,15 +148,14 @@ object AudioStreamResolver {
 
     private fun tryCobalt(videoId: String): String? {
         return try {
-            val reqBody = """{"url":"https://www.youtube.com/watch?v=$videoId","aFormat":"mp3","isAudioOnly":true}"""
-            val body = reqBody.toByteArray()
+            val reqBodyStr = """{"url":"https://www.youtube.com/watch?v=$videoId","aFormat":"mp3","isAudioOnly":true}"""
+            val requestBody = reqBodyStr.toRequestBody("application/json".toMediaType())
 
             val req = Request.Builder()
                 .url("https://api.cobalt.tools/api/json")
                 .header("Accept", "application/json")
-                .header("Content-Type", "application/json")
                 .header("User-Agent", "FMusic/1.0")
-                .post(okhttp3.RequestBody.create("application/json".toMediaType(), body))
+                .post(requestBody)
                 .build()
 
             val res = client.newCall(req).execute()
@@ -186,13 +164,9 @@ object AudioStreamResolver {
 
             val json = JsonParser.parseString(resBody)
             if (!json.isJsonObject) return null
-            val obj = json.asJsonObject
-
-            obj.get("url")?.asString
+            json.asJsonObject.get("url")?.asString
         } catch (e: Exception) {
             null
         }
     }
 }
-
-private fun String.toMediaType() = okhttp3.MediaType.Companion.parse(this)!!
