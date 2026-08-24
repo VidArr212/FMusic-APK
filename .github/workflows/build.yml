@@ -46,7 +46,7 @@ jobs:
         run: |
           gradle wrapper --gradle-version 8.6
           chmod +x ./gradlew
-          ./gradlew assembleRelease -x lint -x lintVitalRelease -x test --stacktrace
+          ./gradlew :app:assembleRelease --stacktrace
 
       - name: Prepare Signed APK File
         run: |
