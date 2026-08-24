@@ -358,21 +358,23 @@ fun SearchScreen(
                                 .padding(horizontal = 16.dp, vertical = 6.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            val firstId = first.browseId
                             CategoryCard(
                                 category = first,
                                 onClick = {
-                                    if (!first.browseId.isNullOrBlank()) {
-                                        onBrowseClick(first.browseId!!, first.title, "mood")
+                                    if (!firstId.isNullOrBlank()) {
+                                        onBrowseClick(firstId, first.title, "mood")
                                     }
                                 },
                                 modifier = Modifier.weight(1f)
                             )
                             if (second != null) {
+                                val secondId = second.browseId
                                 CategoryCard(
                                     category = second,
                                     onClick = {
-                                        if (!second.browseId.isNullOrBlank()) {
-                                            onBrowseClick(second.browseId!!, second.title, "mood")
+                                        if (!secondId.isNullOrBlank()) {
+                                            onBrowseClick(secondId, second.title, "mood")
                                         }
                                     },
                                     modifier = Modifier.weight(1f)

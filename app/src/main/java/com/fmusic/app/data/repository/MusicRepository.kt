@@ -82,7 +82,7 @@ class MusicRepository(private val context: Context) {
 
     suspend fun getLyrics(title: String, artist: String, duration: Long? = null, browseId: String? = null): Result<LyricsResponse> = withContext(Dispatchers.IO) {
         try {
-            val response = InnerTubeClient.getLyrics(title, artist, duration)
+            val response = InnerTubeClient.getLyrics(title, artist, duration, browseId)
             Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)

@@ -236,7 +236,7 @@ object InnerTubeClient {
 
         // from title runs
         if (videoId == null) {
-            val firstRun = (cols.getOrNull(0) as? JsonElement)?.asJsonObject?.getAsJsonArray("runs")?.firstOrNull()?.asJsonObject
+            val firstRun = cols.getOrNull(0)?.asJsonObject?.getAsJsonArray("runs")?.firstOrNull()?.asJsonObject
             videoId = firstRun?.getAsJsonObject("navigationEndpoint")?.getAsJsonObject("watchEndpoint")?.get("videoId")?.asString
         }
 
@@ -545,8 +545,19 @@ object InnerTubeClient {
         }
     }
 
-    suspend fun getLyrics(title: String, artist: String, duration: Long? = null): LyricsResponse = withContext(Dispatchers.IO) {
+    suspend fun getLyrics(title: String, artist: String, duration: Long? = null, browseId: String? = null): LyricsResponse = withContext(Dispatchers.IO) {
         try {
+            // 1. If browseId is available, try direct YTM lyrics
+            if (!browseId.isNullOrBlank()) {
+                try {
+                    val ytmJson = ytPost("browse", mapOf("browseId" to browseId))
+                    for (shelf in findAll(ytmJson, "musicDescriptionShelfRenderer")) {
+                        val lyr = text(shelf.asJsonObject?.get("description"))
+                        if (lyr.length > 20) return@withContext LyricsResponse(plain = lyr, source = "YouTube Music")
+                    }
+                } catch (ignored: Exception) {}
+            }
+
             val encTitle = java.net.URLEncoder.encode(title, "UTF-8")
             val encArtist = java.net.URLEncoder.encode(artist, "UTF-8")
             val durParam = if (duration != null && duration > 0) "&duration=${duration / 1000}" else ""

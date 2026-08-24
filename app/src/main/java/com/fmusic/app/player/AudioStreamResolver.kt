@@ -36,12 +36,17 @@ object AudioStreamResolver {
         "https://yt.cdaut.de"
     )
 
-    suspend fun resolveStreamUrl(context: Context, track: TrackItem): String? = withContext(Dispatchers.IO) {
+    suspend fun resolveStreamUrl(context: Context? = null, track: TrackItem): String? = withContext(Dispatchers.IO) {
         val videoId = track.videoId ?: return@withContext null
 
         // 1. Check local file first (offline mode)
         if (!track.localPath.isNullOrBlank() && File(track.localPath).exists()) {
             return@withContext track.localPath
+        }
+
+        if (context != null) {
+            val cachedFile = File(context.cacheDir, "audio_cache/${videoId}.m4a")
+            if (cachedFile.exists()) return@withContext cachedFile.absolutePath
         }
 
         // 2. Try Piped instances
