@@ -33,40 +33,58 @@ jobs:
         with:
           gradle-version: '8.6'
 
+      - name: Extract Version Name from build.gradle.kts
+        id: version
+        run: |
+          VERSION=$(grep 'versionName' app/build.gradle.kts | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "VERSION_NAME=$VERSION" >> $GITHUB_ENV
+          echo "TAG_NAME=v$VERSION" >> $GITHUB_ENV
+          echo "APK_NAME=FMusic-v$VERSION.apk" >> $GITHUB_ENV
+          echo "Detected version: $VERSION"
+
       - name: Generate Wrapper & Build Debug APK
         run: |
           gradle wrapper --gradle-version 8.6
           chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleRelease --stacktrace
 
       - name: Prepare Direct APK File
         run: |
           mkdir -p release_output
-          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
-            cp app/build/outputs/apk/debug/app-debug.apk release_output/FMusic-v1.0.1.apk
-            cp app/build/outputs/apk/debug/app-debug.apk FMusic-v1.0.1.apk
+          APK_SRC="app/build/outputs/apk/release/app-release-unsigned.apk"
+          if [ ! -f "$APK_SRC" ]; then
+            APK_SRC="app/build/outputs/apk/release/app-release.apk"
           fi
+          if [ ! -f "$APK_SRC" ]; then
+            APK_SRC=$(find app/build/outputs/apk/release/ -name "*.apk" | head -1)
+          fi
+          echo "Using APK: $APK_SRC"
+          cp "$APK_SRC" "release_output/${{ env.APK_NAME }}"
+          cp "$APK_SRC" "${{ env.APK_NAME }}"
 
       - name: Publish Direct .apk to GitHub Releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete v1.0.1 --yes || true
-          git tag -f v1.0.1
-          git push origin v1.0.1 --force || true
-          gh release create v1.0.1 release_output/FMusic-v1.0.1.apk \
-            --title "🎵 FMusic Release v1.0.1" \
-            --notes "### 🎵 FMusic Android App - Version 1.0.1 (Direct APK Download)
+          gh release delete ${{ env.TAG_NAME }} --yes || true
+          git tag -f ${{ env.TAG_NAME }}
+          git push origin ${{ env.TAG_NAME }} --force || true
+          gh release create ${{ env.TAG_NAME }} "release_output/${{ env.APK_NAME }}" \
+            --title "🎵 FMusic Release ${{ env.TAG_NAME }}" \
+            --notes "### 🎵 FMusic Android App - Version ${{ env.VERSION_NAME }}
 
-          - 💉 **Embedded Direct Music API**: Berjalan 100% standalone tanpa server tambahan.
-          - ⚡ **In-App Auto Updater**: Fitur update otomatis langsung di dalam aplikasi.
-          - 🎨 **Midnight Blue & Electric Neon UI**: Desain Spotify Dark Blue & Neon.
+          **Changelog v${{ env.VERSION_NAME }}:**
+          - 🔧 **Fix Force Close**: JSON parsing sekarang aman dari stack overflow
+          - 🎵 **Fix Audio Playback**: Multi-provider stream (6 Piped + 4 Invidious) dengan auto-retry
+          - 🎨 **Fix Genre/Moods Grid**: Tampilan kategori di Search sekarang muncul dengan benar
+          - 🎨 **Fix Mood Colors**: Warna kategori mood sekarang ditampilkan dengan tepat
+          - ⚡ **In-App Auto Updater**: Update otomatis langsung dari aplikasi
 
-          Klik file **FMusic-v1.0.1.apk** di bawah untuk langsung download file APK tanpa .zip!"
+          Klik file **${{ env.APK_NAME }}** di bawah untuk langsung download APK!"
 
       - name: Upload Artifact (Fallback)
         uses: actions/upload-artifact@v4
         with:
-          name: FMusic-v1.0.1-APK
-          path: FMusic-v1.0.1.apk
+          name: FMusic-${{ env.VERSION_NAME }}-APK
+          path: ${{ env.APK_NAME }}
           if-no-files-found: error
