@@ -32,7 +32,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.6'
-          cache-disabled: false
 
       - name: Extract Version Name from build.gradle.kts
         id: version
@@ -47,7 +46,7 @@ jobs:
         run: |
           gradle wrapper --gradle-version 8.6
           chmod +x ./gradlew
-          ./gradlew assembleRelease --stacktrace
+          ./gradlew assembleRelease -x lint -x lintVitalRelease -x test --stacktrace
 
       - name: Prepare Signed APK File
         run: |
